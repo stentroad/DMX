@@ -14,8 +14,14 @@ void setup() {
 }
 
 void loop() {
-    if (soft.available()) {
+    /* if (soft.available()) { */
+    /*     soft.read(); */
+    /* } */
+    unsigned long lastPacket = DMXSerial.noDataSince();
+    if (lastPacket < 5000) {
+        digitalWrite(13, LOW);
+    } else {
         digitalWrite(13, HIGH);
-        soft.read();
+        soft.println("DMX disconnected...");
     }
 }
