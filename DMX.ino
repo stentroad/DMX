@@ -19,9 +19,9 @@ void loop() {
     /* } */
     unsigned long lastPacket = DMXSerial.noDataSince();
     if (lastPacket < 5000) {
-        digitalWrite(13, LOW);
-    } else {
         digitalWrite(13, HIGH);
+    } else {
+        digitalWrite(13, LOW);
         soft.println("DMX disconnected...");
     }
 }
