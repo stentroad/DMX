@@ -120,9 +120,6 @@ void loop() {
     /*     Serial.print(buf); */
     /* } */
     Serial.println();
-    /* Serial.print("Distance: "); */
-    /* unsigned int dist = (unsigned char*)&packet.rlp.e131_packet - (unsigned char*)&packet.rlp; */
-    /* Serial.println(dist, DEC); */
     Serial.println("RLP-------------------------");
     print16("Preamble size: ",packet.rlp.preamble_size);
     print16("Postamble size: ",packet.rlp.postamble_size);
@@ -137,10 +134,6 @@ void loop() {
     print8d("DMX channel 2: ",CHAN(2));
     print8d("DMX channel 3: ",CHAN(3));
     print8d("DMX channel 4: ",CHAN(4));
-    // send a reply, to the IP address and port that sent us the packet we received
-    // Udp.beginPacket(Udp.remoteIP(), Udp.remotePort());
-    // Udp.write(ReplyBuffer);
-    // Udp.endPacket();
   }
   delay(10);
 }
