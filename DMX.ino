@@ -56,7 +56,10 @@ typedef union DMX_PACKET {
 } DMX_PACKET_T;
 
 DMX_PACKET_T packet;
-    
+const int RED_LED_PIN = 9;
+const int GREEN_LED_PIN = 5;
+const int BLUE_LED_PIN = 6;
+
 void setup() {
   Ethernet.begin(mac,ip);
   Udp.begin(localPort);
@@ -95,19 +98,19 @@ void print32(const char* field_name,uint32_t field) {
 void loop() {
   int packetSize = Udp.parsePacket();
   if(packetSize) {
-    Serial.print("Received packet of size ");
-    Serial.println(packetSize);
-    Serial.print("From ");
-    IPAddress remote = Udp.remoteIP();
-    for (int i =0; i < 4; i++) {
-      Serial.print(remote[i], DEC);
-      if (i < 3) {
-        Serial.print(".");
-      }
-    }
-    Serial.print(", port ");
-    Serial.println(Udp.remotePort());
-    memset(packet.udp_buffer,0,sizeof(DMX_PACKET));
+    /* Serial.print("Received packet of size "); */
+    /* Serial.println(packetSize); */
+    /* Serial.print("From "); */
+    /* IPAddress remote = Udp.remoteIP(); */
+    /* for (int i =0; i < 4; i++) { */
+    /*   Serial.print(remote[i], DEC); */
+    /*   if (i < 3) { */
+    /*     Serial.print("."); */
+    /*   } */
+    /* } */
+    /* Serial.print(", port "); */
+    /* Serial.println(Udp.remotePort()); */
+    /* memset(packet.udp_buffer,0,sizeof(DMX_PACKET)); */
     // read the packet into packet_buffer
     Udp.read(packet.udp_buffer,UDP_TX_PACKET_MAX_SIZE);
     /* Serial.println("Contents:"); */
@@ -119,21 +122,24 @@ void loop() {
     /*     } */
     /*     Serial.print(buf); */
     /* } */
-    Serial.println();
-    Serial.println("RLP-------------------------");
-    print16("Preamble size: ",packet.rlp.preamble_size);
-    print16("Postamble size: ",packet.rlp.postamble_size);
-    print16("Flags and length: ",packet.rlp.flags_and_length);
-    print32("Vector: ",packet.rlp.vector);
-    Serial.println("E131------------------------");
-    print16("Flags and length: ",packet.rlp.e131_packet.flags_and_length);
-    print32("Vector: ",packet.rlp.e131_packet.vector);
-    Serial.println("================================");
-    print16d("DMX channel count: ",CHAN_COUNT());
-    print8d("DMX channel 1: ",CHAN(1));
-    print8d("DMX channel 2: ",CHAN(2));
-    print8d("DMX channel 3: ",CHAN(3));
-    print8d("DMX channel 4: ",CHAN(4));
+    /* Serial.println(); */
+    /* Serial.println("RLP-------------------------"); */
+    /* print16("Preamble size: ",packet.rlp.preamble_size); */
+    /* print16("Postamble size: ",packet.rlp.postamble_size); */
+    /* print16("Flags and length: ",packet.rlp.flags_and_length); */
+    /* print32("Vector: ",packet.rlp.vector); */
+    /* Serial.println("E131------------------------"); */
+    /* print16("Flags and length: ",packet.rlp.e131_packet.flags_and_length); */
+    /* print32("Vector: ",packet.rlp.e131_packet.vector); */
+    /* Serial.println("================================"); */
+    /* print16d("DMX channel count: ",CHAN_COUNT()); */
+    /* print8d("DMX channel 1: ",CHAN(1)); */
+    /* print8d("DMX channel 2: ",CHAN(2)); */
+    /* print8d("DMX channel 3: ",CHAN(3)); */
+    /* print8d("DMX channel 4: ",CHAN(4)); */
+    analogWrite(RED_LED_PIN,CHAN(1));
+    analogWrite(GREEN_LED_PIN,CHAN(2));
+    analogWrite(BLUE_LED_PIN,CHAN(3));
   }
-  delay(10);
+  //  delay(10);
 }
