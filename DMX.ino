@@ -3,6 +3,7 @@
 #define UDP_TX_PACKET_MAX_SIZE 800
 #include <utility/util.h>
 #include <stdint.h>
+#include <DMXSerial.h>
 
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
@@ -10,22 +11,19 @@ byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 IPAddress ip(239, 255, 0, 1);
 unsigned int localPort = 5568;
 
-// buffers for receiving and sending data
-char ReplyBuffer[] = "acknowledged";       // a string to send back
-
 EthernetUDP Udp;
 
 #define CHAN(n) packet.rlp.e131_packet.dmp_packet.property_values[n]
 #define CHAN_COUNT() packet.rlp.e131_packet.dmp_packet.property_value_count
 #define MAX_CHANNELS 512
 typedef struct DMP_PACKET {
-    uint16_t flags_and_length;
-    uint8_t vector;
-    uint8_t address_type_and_data_type;
-    uint16_t first_property_address;
-    uint16_t address_increment;
-    uint16_t property_value_count;
-    uint8_t property_values[MAX_CHANNELS+1];
+  uint16_t flags_and_length;
+  uint8_t vector;
+  uint8_t address_type_and_data_type;
+  uint16_t first_property_address;
+  uint16_t address_increment;
+  uint16_t property_value_count;
+  uint8_t property_values[MAX_CHANNELS+1];
 } DMP_PACKET_T;
 
 typedef struct E131_PACKET {
@@ -61,43 +59,50 @@ const int GREEN_LED_PIN = 5;
 const int BLUE_LED_PIN = 6;
 
 void setup() {
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  digitalWrite(GREEN_LED_PIN, LOW);
   Ethernet.begin(mac,ip);
   Udp.begin(localPort);
-  Serial.begin(9600);
-  Serial.println("Setup complete...");
+  //Serial.begin(9600);
+  //Serial.println("Setup complete...");
+  DMXSerial.init(DMXController);
+  DMXSerial.write(2,255); // Red
+  
 }
 
-void print8d(const char* field_name,uint8_t field) {
-    char buf[20];
-    Serial.print(field_name);
-    sprintf(buf,"%u",field);
-    Serial.println(buf);
-}
+// void print8d(const char* field_name,uint8_t field) {
+//     char buf[20];
+//     Serial.print(field_name);
+//     sprintf(buf,"%u",field);
+//     Serial.println(buf);
+// }
+//
+// void print16d(const char* field_name,uint16_t field) {
+//     char buf[20];
+//     Serial.print(field_name);
+//     sprintf(buf,"%u",ntohs(field));
+//     Serial.println(buf);
+// }
+//
+// void print16(const char* field_name,uint16_t field) {
+//     char buf[20];
+//     Serial.print(field_name);
+//     sprintf(buf,"%04x",ntohs(field));
+//     Serial.println(buf);
+// }
 
-void print16d(const char* field_name,uint16_t field) {
-    char buf[20];
-    Serial.print(field_name);
-    sprintf(buf,"%u",ntohs(field));
-    Serial.println(buf);
-}
-
-void print16(const char* field_name,uint16_t field) {
-    char buf[20];
-    Serial.print(field_name);
-    sprintf(buf,"%04x",ntohs(field));
-    Serial.println(buf);
-}
-
-void print32(const char* field_name,uint32_t field) {
-    char buf[20];
-    Serial.print(field_name);
-    sprintf(buf,"%08lx",ntohl(field));
-    Serial.println(buf);
-}
+// void print32(const char* field_name,uint32_t field) {
+//                                                      char buf[20];
+//                                                      Serial.print(field_name);
+//                                                      sprintf(buf,"%08lx",ntohl(field));
+//                                                      Serial.println(buf);
+//                                                      }
 
 void loop() {
   int packetSize = Udp.parsePacket();
   if(packetSize) {
+    //digitalWrite(GREEN_LED_PIN, HIGH);
+
     /* Serial.print("Received packet of size "); */
     /* Serial.println(packetSize); */
     /* Serial.print("From "); */
@@ -137,9 +142,11 @@ void loop() {
     /* print8d("DMX channel 2: ",CHAN(2)); */
     /* print8d("DMX channel 3: ",CHAN(3)); */
     /* print8d("DMX channel 4: ",CHAN(4)); */
-    analogWrite(RED_LED_PIN,CHAN(1));
-    analogWrite(GREEN_LED_PIN,CHAN(2));
-    analogWrite(BLUE_LED_PIN,CHAN(3));
+    for(int i=0;i<CHAN_COUNT();i++) {
+      DMXSerial.write(i,CHAN(i));
+    }
+    analogWrite(GREEN_LED_PIN, CHAN(0));
+    //digitalWrite(GREEN_LED_PIN, LOW);
   }
-  //  delay(10);
+  delayMicroseconds(2000);
 }
