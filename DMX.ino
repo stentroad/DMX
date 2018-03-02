@@ -40,6 +40,9 @@ WiFiUDP Udp;
 #define CHAN(n) packet.rlp.e131_packet.dmp_packet.property_values[n]
 #define CHAN_COUNT() packet.rlp.e131_packet.dmp_packet.property_value_count
 #define MAX_CHANNELS 512
+
+#pragma pack(push)
+#pragma pack(1)
 typedef struct DMP_PACKET {
   uint16_t flags_and_length;
   uint8_t vector;
@@ -76,8 +79,10 @@ typedef union DMX_PACKET {
     char udp_buffer[UDP_TX_PACKET_MAX_SIZE];
     RLP_PACKET_T rlp;
 } DMX_PACKET_T;
+#pragma pack(pop)
 
 DMX_PACKET_T packet;
+
 #ifdef ESP8266
 const int RED_LED_PIN = 9;
 const int GREEN_LED_PIN = D1;
