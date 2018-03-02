@@ -160,11 +160,13 @@ void print16(const char* field_name,uint16_t field) {
 }
 
 void print32(const char* field_name,uint32_t field) {
-                                                     char buf[20];
-                                                     Serial.print(field_name);
-                                                     sprintf(buf,"%08lx",ntohl(field));
-                                                     Serial.println(buf);
-                                                     }
+    char buf[20];
+    Serial.print(field_name);
+    //sprintf(buf,"%08lx",field /*ntohl(field)*/);
+    sprintf(buf,"%08x",ntohl(field));
+    Serial.println(buf);
+}
+
 #endif
 
 void loop() {
