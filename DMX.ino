@@ -225,6 +225,6 @@ void loop() {
     analogWrite(GREEN_LED_PIN, CHAN(1));
     //digitalWrite(GREEN_LED_PIN, LOW);
   }
-  delay(2);
-  //delayMicroseconds(2000);
+  //delay(2);
+  delayMicroseconds(2000);
 }
