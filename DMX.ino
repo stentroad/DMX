@@ -1,4 +1,5 @@
 #define ESP8266 1
+//#define SERIAL_DEBUG 1
 
 #include <string.h>
 
@@ -26,7 +27,7 @@ IPAddress ip(192, 168, 1, 100); // BE SURE TO UPDATE THIS
 #ifndef ESP8266
 #include <DMXSerial.h>
 #else
-// TODO: Include ESP8266 DMX library here
+#include <espDMX.h>
 #endif
 unsigned int localPort = 5568;
 
@@ -35,10 +36,10 @@ EthernetUDP Udp;
 #else
 WiFiUDP Udp;
 #endif
-//#define SERIAL_DEBUG 1
 
 #define CHAN(n) packet.rlp.e131_packet.dmp_packet.property_values[n]
-#define CHAN_COUNT() packet.rlp.e131_packet.dmp_packet.property_value_count
+#define CHAN_BUF &CHAN(1)
+#define CHAN_COUNT (uint16_t) ntohs(packet.rlp.e131_packet.dmp_packet.property_value_count)-1
 #define MAX_CHANNELS 512
 
 #pragma pack(push)
@@ -87,26 +88,30 @@ DMX_PACKET_T packet;
 const int RED_LED_PIN = 9;
 const int GREEN_LED_PIN = D1;
 const int BLUE_LED_PIN = 6;
+const int YELLOW_LED_PIN = D2;
 #else
 const int RED_LED_PIN = 9;
 const int GREEN_LED_PIN = 5;
 const int BLUE_LED_PIN = 6;
 #endif
-
 void setup() {
   ESP.wdtDisable();
+  pinMode(YELLOW_LED_PIN, OUTPUT);
+  analogWrite(YELLOW_LED_PIN, 255);
 #ifdef SERIAL_DEBUG
   Serial.begin(9600);
   Serial.println();
   Serial.println("Setup - Start");
 #endif  
-  pinMode(GREEN_LED_PIN, OUTPUT);
-  analogWrite(GREEN_LED_PIN, 255);
+  //pinMode(GREEN_LED_PIN, OUTPUT);
+  //analogWrite(GREEN_LED_PIN, 255);
+  dmxB.begin(GREEN_LED_PIN);
 #ifdef ESP8266
 #ifdef SERIAL_DEBUG
   Serial.println("Connecting WIFI");
 #endif
   WiFi.begin(ssid, password);
+  WiFi.mode(WIFI_STA);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
 #ifdef SERIAL_DEBUG
@@ -126,7 +131,7 @@ void setup() {
     for (;;);
   }
 #endif
-  analogWrite(GREEN_LED_PIN, 0);
+
   Udp.begin(localPort);
 #ifdef SERIAL_DEBUG
   Serial.println("Setup complete...");
@@ -134,7 +139,9 @@ void setup() {
   //DMXSerial.init(DMXController);
   //DMXSerial.write(2,255); // Red
 
+  analogWrite(GREEN_LED_PIN, 0);
   ESP.wdtEnable(20000);
+  analogWrite(YELLOW_LED_PIN, 0);
 }
 
 #ifdef SERIAL_DEBUG
@@ -186,13 +193,12 @@ void loop() {
     }
     Serial.print(", port ");
     Serial.println(Udp.remotePort());
-    memset(packet.udp_buffer,0,sizeof(DMX_PACKET));
+    //memset(packet.udp_buffer,0,sizeof(DMX_PACKET));
 #endif
     // read the packet into packet_buffer
     Udp.read(packet.udp_buffer,UDP_TX_PACKET_MAX_SIZE);
 #ifdef SERIAL_DEBUG
 // Commented this out as it was causing software watch dog timeouts.
-/*
     Serial.println("Contents:");
     char buf[20];
     for(int i = 0; i < packetSize; i++) {
@@ -203,7 +209,7 @@ void loop() {
         Serial.print(buf);
     }
     Serial.println();
-*/
+
     Serial.println("RLP-------------------------");
     print16("Preamble size: ",packet.rlp.preamble_size);
     print16("Postamble size: ",packet.rlp.postamble_size);
@@ -213,17 +219,23 @@ void loop() {
     print16("Flags and length: ",packet.rlp.e131_packet.flags_and_length);
     print32("Vector: ",packet.rlp.e131_packet.vector);
     Serial.println("================================");
-    print16d("DMX channel count: ",CHAN_COUNT());
+    //print16d("CHAN COUNT DATA decimal: ",packet.rlp.e131_packet.dmp_packet.property_value_count);
+    Serial.print("DMX channel count: ");
+    Serial.println(CHAN_COUNT);
     print8d("DMX channel 1: ",CHAN(1));
     print8d("DMX channel 2: ",CHAN(2));
     //print8d("DMX channel 3: ",CHAN(3));
     //print8d("DMX channel 4: ",CHAN(4));
 #endif
-    // for(int i=1;i<=CHAN_COUNT();i++) {
-    //   DMXSerial.write(i,CHAN(i));
-    // }
-    analogWrite(GREEN_LED_PIN, CHAN(1));
-    //digitalWrite(GREEN_LED_PIN, LOW);
+#ifdef ESP8266
+    dmxB.setChans(&packet.rlp.e131_packet.dmp_packet.property_values[1], CHAN_COUNT);
+    //dmxB.setChans(CHAN_BUF, CHAN_COUNT);
+#else
+    for(int i=1;i<=CHAN_COUNT;i++) {
+      DMXSerial.write(i,CHAN(i));
+    }
+#endif
+    //analogWrite(GREEN_LED_PIN, CHAN(1));
   }
   //delay(2);
   delayMicroseconds(2000);
