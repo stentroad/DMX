@@ -1,19 +1,40 @@
-#include <string.h>
-#include <Ethernet.h>
-#define UDP_TX_PACKET_MAX_SIZE 800
-#include <utility/util.h>
-#include <stdint.h>
-//#include <DMXSerial.h>
+#define ESP8266 1
 
+#include <string.h>
+
+// Not used directly by ESP8266 but required for ntohs
+#include <Ethernet.h>
+#include <utility/util.h>
+
+#ifndef ESP8266
+#include <EthernetUdp.h>
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = { 0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-//IPAddress ip(239, 255, 0, 1);
-IPAddress ip(192, 168, 1, 100);
+#else
+#include <ESP8266WiFi.h>
+#include <WiFiUdp.h>
+const char* ssid = "<network>"; // BE SURE TO UPDATE THIS
+const char* password = "<password>"; // BE SURE TO UPDATE THIS
+#endif
+
+IPAddress ip(192, 168, 1, 100); // BE SURE TO UPDATE THIS
+
+#define UDP_TX_PACKET_MAX_SIZE 800
+#include <stdint.h>
+
+#ifndef ESP8266
+#include <DMXSerial.h>
+#else
+// TODO: Include ESP8266 DMX library here
+#endif
 unsigned int localPort = 5568;
 
+#ifndef ESP8266
 EthernetUDP Udp;
-
+#else
+WiFiUDP Udp;
+#endif
 //#define SERIAL_DEBUG 1
 
 #define CHAN(n) packet.rlp.e131_packet.dmp_packet.property_values[n]
@@ -57,22 +78,59 @@ typedef union DMX_PACKET {
 } DMX_PACKET_T;
 
 DMX_PACKET_T packet;
+#ifdef ESP8266
+const int RED_LED_PIN = 9;
+const int GREEN_LED_PIN = D1;
+const int BLUE_LED_PIN = 6;
+#else
 const int RED_LED_PIN = 9;
 const int GREEN_LED_PIN = 5;
 const int BLUE_LED_PIN = 6;
+#endif
 
 void setup() {
-  pinMode(GREEN_LED_PIN, OUTPUT);
-  analogWrite(GREEN_LED_PIN, 0);
-  Ethernet.begin(mac,ip);
-  Udp.begin(localPort);
+  ESP.wdtDisable(); // TODO: Research why this is necessary...
+  //ESP.wdtEnable(20000);
 #ifdef SERIAL_DEBUG
   Serial.begin(9600);
+  Serial.println();
+  Serial.println("Setup - Start");
+#endif  
+  pinMode(GREEN_LED_PIN, OUTPUT);
+  analogWrite(GREEN_LED_PIN, 255);
+#ifdef ESP8266
+#ifdef SERIAL_DEBUG
+  Serial.println("Connecting WIFI");
+#endif
+  WiFi.begin(ssid, password);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+#ifdef SERIAL_DEBUG
+    Serial.print(".");
+#endif
+  }
+#ifdef SERIAL_DEBUG
+  Serial.println("");
+  Serial.println("WiFi connected");  
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+#endif
+
+#else
+  if (Ethernet.begin(mac,ip) == 0) {
+    Serial.println("Failed to configure Ethernet");
+    for (;;);
+  }
+#endif
+  analogWrite(GREEN_LED_PIN, 0);
+  Udp.begin(localPort);
+#ifdef SERIAL_DEBUG
   Serial.println("Setup complete...");
 #endif
   //DMXSerial.init(DMXController);
   //DMXSerial.write(2,255); // Red
-  
+
+  ESP.wdtEnable(20000);
 }
 
 #ifdef SERIAL_DEBUG
@@ -127,6 +185,8 @@ void loop() {
     // read the packet into packet_buffer
     Udp.read(packet.udp_buffer,UDP_TX_PACKET_MAX_SIZE);
 #ifdef SERIAL_DEBUG
+// Commented this out as it was causing software watch dog timeouts.
+/*
     Serial.println("Contents:");
     char buf[20];
     for(int i = 0; i < packetSize; i++) {
@@ -137,6 +197,7 @@ void loop() {
         Serial.print(buf);
     }
     Serial.println();
+*/
     Serial.println("RLP-------------------------");
     print16("Preamble size: ",packet.rlp.preamble_size);
     print16("Postamble size: ",packet.rlp.postamble_size);
@@ -149,8 +210,8 @@ void loop() {
     print16d("DMX channel count: ",CHAN_COUNT());
     print8d("DMX channel 1: ",CHAN(1));
     print8d("DMX channel 2: ",CHAN(2));
-    print8d("DMX channel 3: ",CHAN(3));
-    print8d("DMX channel 4: ",CHAN(4));
+    //print8d("DMX channel 3: ",CHAN(3));
+    //print8d("DMX channel 4: ",CHAN(4));
 #endif
     // for(int i=1;i<=CHAN_COUNT();i++) {
     //   DMXSerial.write(i,CHAN(i));
@@ -158,5 +219,6 @@ void loop() {
     analogWrite(GREEN_LED_PIN, CHAN(1));
     //digitalWrite(GREEN_LED_PIN, LOW);
   }
-  delayMicroseconds(2000);
+  delay(2);
+  //delayMicroseconds(2000);
 }
