@@ -89,8 +89,7 @@ const int BLUE_LED_PIN = 6;
 #endif
 
 void setup() {
-  ESP.wdtDisable(); // TODO: Research why this is necessary...
-  //ESP.wdtEnable(20000);
+  ESP.wdtDisable();
 #ifdef SERIAL_DEBUG
   Serial.begin(9600);
   Serial.println();
